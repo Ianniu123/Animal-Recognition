@@ -7,17 +7,18 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.datasets import load_boston
+import lightgbm as ltb
 
 df = pd.read_csv("data.csv")
+
+boston = load_boston()
 
 house_price_dataset = fetch_california_housing()
 house_price_panda = fetch_california_housing(as_frame =True)
 
-X = df.drop(['index', 'title', 'sqft', 'list_price', 'type', 'bedrooms', 'final_price','parking', 'description', 'mls', 'full_link', 'full_address', 'final_price_transformed', 'city_district', 'final_price_log'], axis=1)
+X = df.drop(['index', 'title', 'sqft', 'type', 'bedrooms', 'final_price','parking', 'description', 'mls', 'full_link', 'full_address', 'final_price_transformed', 'city_district', 'final_price_log'], axis=1)
 Y = df['final_price']
-
-print(X.isna())
-print(df.columns)
 
 poly = PolynomialFeatures(degree=1, include_bias=False)
 scaler_linear = StandardScaler()
@@ -25,14 +26,12 @@ scaler_linear = StandardScaler()
 x_train, x_2, y_train, y_2 = train_test_split(X, Y, test_size=0.4, random_state = 3)
 x_cv, x_test, y_cv, y_test = train_test_split(x_2, y_2, test_size=0.5, random_state = 3)
 
-model = XGBRegressor(learning_rate=0.01, max_depth=1, n_estimators=100)
+model = XGBRegressor()
+#learning_rate=0.14, max_depth=6, n_estimators=92)
 
-x_train_mapped = poly.fit_transform(x_train)
-x_train_scaled_mapped = scaler_linear.fit_transform(x_train_mapped)
+model.fit(x_train, y_train)
 
-model.fit(x_train_scaled_mapped, y_train)
-
-train_result = model.predict(x_train_scaled_mapped)
+train_result = model.predict(x_train)
 
 score_1 = metrics.r2_score(y_train, train_result)
 score_2 = metrics.mean_absolute_error(y_train, train_result)
@@ -40,10 +39,7 @@ score_2 = metrics.mean_absolute_error(y_train, train_result)
 print(f"Round Squared Error: {score_1}")
 print(f"Mean Absolute Error: {score_2}")
 
-x_cv_mapped = poly.fit_transform(x_cv)
-x_cv_scaled_mapped = scaler_linear.transform(x_cv_mapped)
-
-cv_result = model.predict(x_cv_scaled_mapped)
+cv_result = model.predict(x_cv)
 
 score_1 = metrics.r2_score(y_cv, cv_result)
 score_2 = metrics.mean_absolute_error(y_cv, cv_result)
@@ -51,10 +47,7 @@ score_2 = metrics.mean_absolute_error(y_cv, cv_result)
 print(f"Round Squared Error: {score_1}")
 print(f"Mean Absolute Error: {score_2}")
 
-x_test_mapped = poly.fit_transform(x_test)
-x_test_scaled_mapped = scaler_linear.transform(x_test_mapped)
-
-test_result = model.predict(x_test_scaled_mapped)
+test_result = model.predict(x_test)
 
 score_1 = metrics.r2_score(y_test, test_result)
 score_2 = metrics.mean_absolute_error(y_test, test_result)
@@ -65,12 +58,6 @@ print(f"Mean Absolute Error: {score_2}")
 plt.scatter(y_test, test_result)
 plt.xlabel("Actual Prices")
 plt.ylabel("Predictid Price")
-m, b = np.polyfit(y_test, test_result, 1)
 plt.title("Actual Price vs Predicted Price")
-plt.plot(y_test, m* y_test + b)
+plt.axis('square')
 plt.show()
-
-print(y_test)
-print(test_result[3042])
-print(test_result.shape)
-
